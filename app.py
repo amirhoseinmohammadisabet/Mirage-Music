@@ -72,19 +72,31 @@ def get_mood_queue(queue_type, name):
     else:
         target_mood = name_lower
 
+    # Base query ensures we ONLY sort tracks that have been analyzed
+    base_query = 'SELECT * FROM tracks WHERE energy IS NOT NULL'
+
+    # Grab a larger pool (50) of fitting songs, then we will randomize 20 from it
     if target_mood in ['joyful', 'inspired', 'confident']:
-        query = 'SELECT * FROM tracks ORDER BY energy DESC, brightness DESC LIMIT 20'
+        order_clause = 'ORDER BY energy DESC, brightness DESC LIMIT 50'
     elif target_mood in ['grateful', 'calm', 'relaxed']:
-        query = 'SELECT * FROM tracks ORDER BY energy ASC, brightness DESC LIMIT 20'
+        order_clause = 'ORDER BY energy ASC, brightness DESC LIMIT 50'
     elif target_mood in ['gloomy']:
-        query = 'SELECT * FROM tracks ORDER BY energy ASC, brightness ASC LIMIT 20'
+        order_clause = 'ORDER BY energy ASC, brightness ASC LIMIT 50'
     elif target_mood in ['anxious', 'furious']:
-        query = 'SELECT * FROM tracks ORDER BY energy DESC, brightness ASC LIMIT 20'
+        order_clause = 'ORDER BY energy DESC, brightness ASC LIMIT 50'
     else:
-        query = 'SELECT * FROM tracks ORDER BY RANDOM() LIMIT 20'
+        order_clause = 'ORDER BY RANDOM() LIMIT 50'
+
+    # The subquery groups the right mood, the outer query picks 20 randomly so it stays fresh
+    query = f"SELECT * FROM ({base_query} {order_clause}) ORDER BY RANDOM() LIMIT 20"
 
     try:
         tracks = conn.execute(query).fetchall()
+        
+        # Fallback: If NO tracks have data yet, just play random music
+        if not tracks:
+            tracks = conn.execute('SELECT * FROM tracks ORDER BY RANDOM() LIMIT 20').fetchall()
+            
     except sqlite3.OperationalError:
         tracks = conn.execute('SELECT * FROM tracks ORDER BY RANDOM() LIMIT 20').fetchall()
         
