@@ -5,6 +5,7 @@ import io
 import datetime
 from mutagen.id3 import ID3
 
+
 app = Flask(__name__)
 
 def get_db_connection():
@@ -122,14 +123,34 @@ def log_telemetry():
     conn.close()
     return jsonify({"status": "success"})
 
+
 if __name__ == '__main__':
-    # 1. Run the basic file scanner to find new MP3s
-    import sync_engine
-    sync_engine.run_sync()
+    # ... your engine imports ...
+    app.run(host='0.0.0.0', port=5000, debug=False)
+
+# import webview
+# from app import app
+# import sync_engine
+# import dsp_engine
+
+# def initialize_data(window):
+#     # This runs right after the window opens
+#     print("Syncing and analyzing files...")
+#     sync_engine.run_sync()
+#     dsp_engine.run_dsp_sync()
+
+# if __name__ == '__main__':
+#     print("Opening desktop window...")
     
-    # 2. Run the heavy DSP engine to calculate real acoustic features
-    import dsp_engine
-    dsp_engine.run_dsp_sync()
+#     # Pass the Flask 'app' object directly to url, pywebview handles the threading!
+#     window = webview.create_window(
+#         title='Mirage Music', 
+#         url=app,  
+#         width=1000, 
+#         height=750,
+#         background_color='#121212',
+#         min_size=(800, 600)
+#     )
     
-    # 3. Start the UI
-    app.run(debug=True, port=5000)
+#     # Start the app and run the sync function in the background
+#     webview.start(initialize_data, window)
