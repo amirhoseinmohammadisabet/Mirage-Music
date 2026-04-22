@@ -3,57 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Local Player</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #121212; color: white; }
-        .player-box { background: #222; padding: 20px; border-radius: 10px; position: sticky; top: 20px; }
-        audio { width: 100%; margin-top: 10px; }
-        .track-list { list-style: none; padding: 0; margin-top: 30px; }
-        .track-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; transition: background 0.2s; }
-        .track-item:hover { background: #333; border-radius: 5px; }
-        .track-title { font-weight: bold; font-size: 1.1em; }
-        .track-artist { color: #aaa; font-size: 0.9em; }
-    </style>
+    <title>Smart Clinical Player</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-    <div class="player-box">
-        <h2>Now Playing</h2>
-        <div id="now-playing-text">Select a track to start...</div>
-        <audio id="audio-player" controls autoplay></audio>
+    <div id="ema-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>SYSTEM CHECK</h2>
+            <p>Acoustic calibration required. Indicate current stress level.</p>
+            <div class="stress-slider-container">
+                <input type="range" id="stress-slider" min="1" max="10" value="5">
+                <div class="stress-labels">
+                    <span>[ 1 ] CALM</span>
+                    <span>[ 10 ] CRITICAL</span>
+                </div>
+            </div>
+            <button id="submit-mood-btn">INITIALIZE AUDIO</button>
+        </div>
     </div>
 
-    <ul class="track-list" id="track-list">
-        </ul>
+    <div class="app-container">
+        
+        <aside class="library-panel glass-panel">
+            <div class="panel-header">
+                <h2>DATABASE</h2>
+            </div>
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="SEARCH DATABASE...">
+            </div>
+            <ul class="track-list" id="track-list">
+                </ul>
+        </aside>
 
-    <script>
-        // 1. Fetch the songs from your Flask API
-        fetch('/api/tracks')
-            .then(response => response.json())
-            .then(tracks => {
-                const list = document.getElementById('track-list');
+        <main class="control-panel">
+            
+            <div class="player-box glass-panel">
+                <div class="now-playing-header">
+                    <img id="cover-art" src="" alt="Cover" onerror="this.style.display='none'">
+                    <div>
+                        <h3 id="now-playing-title" style="margin: 0;">AWAITING INPUT...</h3>
+                        <div id="now-playing-artist" class="artist-text">---</div>
+                    </div>
+                </div>
                 
-                // 2. Loop through the songs and create HTML for each one
-                tracks.forEach(track => {
-                    let li = document.createElement('li');
-                    li.className = 'track-item';
-                    li.innerHTML = `
-                        <div class="track-title">${track.title}</div>
-                        <div class="track-artist">${track.artist} &bull; ${track.album}</div>
-                    `;
-                    
-                    // 3. When clicked, tell the audio player to play this specific track
-                    li.onclick = () => playTrack(track);
-                    list.appendChild(li);
-                });
-            });
+                <audio id="audio-player"></audio>
 
-        function playTrack(track) {
-            const player = document.getElementById('audio-player');
-            // Point the audio player to your Flask audio streaming route
-            player.src = `/play/${track.id}`;
-            document.getElementById('now-playing-text').innerHTML = `<strong>${track.title}</strong> by ${track.artist}`;
-        }
-    </script>
+                <div class="slider-container">
+                    <span id="current-time">0:00</span>
+                    <input type="range" id="seek-bar" value="0" step="1" disabled>
+                    <span id="duration">0:00</span>
+                </div>
+
+                <div class="controls">
+                    <button id="prev-btn" onclick="playPrevious()">⏮</button>
+                    <button id="play-pause-btn" onclick="togglePlay()">▶</button>
+                    <button id="next-btn" onclick="playNext()">⏭</button>
+                </div>
+
+                <div class="slider-container volume-container">
+                    <span>🔈</span>
+                    <input type="range" id="volume-bar" min="0" max="1" step="0.01" value="1">
+                    <span>🔊</span>
+                </div>
+            </div>
+            
+            <div class="dashboard-panel glass-panel">
+                <div class="toggle-container">
+                    <button id="tab-mood" class="tab-btn active" onclick="switchTab('mood')">MANUAL OVERRIDE</button>
+                    <button id="tab-time" class="tab-btn" onclick="switchTab('time')">CIRCADIAN SYNC</button>
+                </div>
+                
+                <div id="grid-mood" class="mood-grid">
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Joyful')">JOYFUL</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Inspired')">INSPIRED</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Confident')">CONFIDENT</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Grateful')">GRATEFUL</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Calm')">CALM</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Relaxed')">RELAXED</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Gloomy')">GLOOMY</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Anxious')">ANXIOUS</button>
+                    <button class="mood-btn" onclick="triggerQueue('mood', 'Furious')">FURIOUS</button>
+                </div>
+
+                <div id="grid-time" class="mood-grid" style="display: none;">
+                    <button class="mood-btn time-btn" onclick="triggerQueue('time', 'Morning')">🌅 MORNING</button>
+                    <button class="mood-btn time-btn" onclick="triggerQueue('time', 'Noon')">☀️ NOON</button>
+                    <button class="mood-btn time-btn" onclick="triggerQueue('time', 'Afternoon')">☕ AFTERNOON</button>
+                    <button class="mood-btn time-btn" onclick="triggerQueue('time', 'Evening')">🌙 EVENING</button>
+                </div>
+                
+                <div id="vibe-text"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

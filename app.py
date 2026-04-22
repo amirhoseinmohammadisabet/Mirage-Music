@@ -1,43 +1,123 @@
-from flask import Flask, render_template, jsonify, send_file
+from flask import Flask, render_template, jsonify, send_file, request
 import sqlite3
 import os
+import io
+import datetime
+from mutagen.id3 import ID3
 
 app = Flask(__name__)
 
-# Helper function to connect to the database
 def get_db_connection():
     conn = sqlite3.connect('library.db')
-    # This line tells SQLite to return data as dictionaries, which is easier for the web
     conn.row_factory = sqlite3.Row 
+    
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS listening_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            track_id INTEGER,
+            vibe_name TEXT,
+            stress_score INTEGER,
+            duration_listened REAL
+        )
+    ''')
+    conn.commit()
     return conn
 
-# 1. THE FRONTEND: Serve the main web page
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# 2. THE API: Send the library data to the web page
 @app.route('/api/tracks')
 def get_tracks():
     conn = get_db_connection()
     tracks = conn.execute('SELECT * FROM tracks').fetchall()
     conn.close()
-    # Convert the SQLite rows into a JSON list
     return jsonify([dict(ix) for ix in tracks])
 
-# 3. THE AUDIO STREAMER: Send the actual MP3 file to the browser
 @app.route('/play/<int:track_id>')
 def play_track(track_id):
     conn = get_db_connection()
     track = conn.execute('SELECT file_path FROM tracks WHERE id = ?', (track_id,)).fetchone()
     conn.close()
-    
     if track and os.path.exists(track['file_path']):
-        # send_file streams the audio file safely to the browser
         return send_file(track['file_path'])
-    
     return "Track not found", 404
 
+@app.route('/cover/<int:track_id>')
+def get_cover(track_id):
+    conn = get_db_connection()
+    track = conn.execute('SELECT file_path FROM tracks WHERE id = ?', (track_id,)).fetchone()
+    conn.close()
+    if track and os.path.exists(track['file_path']):
+        try:
+            tags = ID3(track['file_path'])
+            for tag in tags.values():
+                if tag.FrameID == 'APIC':
+                    return send_file(io.BytesIO(tag.data), mimetype=tag.mime)
+        except Exception:
+            pass 
+    return "No cover found", 404
+
+@app.route('/api/queue/<queue_type>/<name>')
+def get_mood_queue(queue_type, name):
+    conn = get_db_connection()
+    name_lower = name.lower()
+    
+    if queue_type == 'time':
+        if name_lower == 'morning': target_mood = 'inspired'
+        elif name_lower == 'noon': target_mood = 'joyful'
+        elif name_lower == 'afternoon': target_mood = 'relaxed'
+        else: target_mood = 'calm'
+    else:
+        target_mood = name_lower
+
+    if target_mood in ['joyful', 'inspired', 'confident']:
+        query = 'SELECT * FROM tracks ORDER BY energy DESC, brightness DESC LIMIT 20'
+    elif target_mood in ['grateful', 'calm', 'relaxed']:
+        query = 'SELECT * FROM tracks ORDER BY energy ASC, brightness DESC LIMIT 20'
+    elif target_mood in ['gloomy']:
+        query = 'SELECT * FROM tracks ORDER BY energy ASC, brightness ASC LIMIT 20'
+    elif target_mood in ['anxious', 'furious']:
+        query = 'SELECT * FROM tracks ORDER BY energy DESC, brightness ASC LIMIT 20'
+    else:
+        query = 'SELECT * FROM tracks ORDER BY RANDOM() LIMIT 20'
+
+    try:
+        tracks = conn.execute(query).fetchall()
+    except sqlite3.OperationalError:
+        tracks = conn.execute('SELECT * FROM tracks ORDER BY RANDOM() LIMIT 20').fetchall()
+        
+    conn.close()
+    display_title = f"CIRCADIAN: {name.title()}" if queue_type == 'time' else f"MOOD: {name.title()}"
+    return jsonify({"vibe": display_title, "tracks": [dict(ix) for ix in tracks]})
+
+@app.route('/api/log', methods=['POST'])
+def log_telemetry():
+    data = request.json
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO listening_logs (timestamp, track_id, vibe_name, stress_score, duration_listened) 
+        VALUES (?, ?, ?, ?, ?)
+    ''', (
+        datetime.datetime.now().isoformat(),
+        data.get('track_id'),
+        data.get('vibe_name'),
+        data.get('stress_score'),
+        data.get('duration_listened')
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
 if __name__ == '__main__':
-    # Start the server on port 5000
+    # 1. Run the basic file scanner to find new MP3s
+    import sync_engine
+    sync_engine.run_sync()
+    
+    # 2. Run the heavy DSP engine to calculate real acoustic features
+    import dsp_engine
+    dsp_engine.run_dsp_sync()
+    
+    # 3. Start the UI
     app.run(debug=True, port=5000)

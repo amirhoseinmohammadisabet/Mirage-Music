@@ -1,0 +1,162 @@
+/* --- OPERA GX / CYBERPUNK VARIABLES --- */
+:root {
+    --accent-color: #fa1e4e;      /* Neon Red */
+    --accent-glow: rgba(250, 30, 78, 0.5);
+    --text-main: #ffffff;
+    --text-muted: #8b92a5;
+    --border-color: rgba(250, 30, 78, 0.3);
+    --glass-bg: rgba(15, 17, 26, 0.75); /* Semi-transparent dark blue/black */
+}
+
+/* --- FULL SCREEN BACKGROUND --- */
+body { 
+    font-family: 'Rajdhani', sans-serif;
+    margin: 0; 
+    padding: 0;
+    height: 100vh;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+    
+    /* Your uploaded background image */
+    background-image: url('Back.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* --- LAYOUT STRUCTURE --- */
+.app-container {
+    display: flex;
+    width: 95vw;
+    height: 90vh;
+    max-width: 1400px;
+    gap: 20px;
+}
+
+.library-panel {
+    flex: 1; /* Takes up left side */
+    min-width: 300px;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-panel {
+    flex: 2; /* Takes up right side */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* --- GLASSMORPHISM PANELS --- */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px); /* Blurs the octopus slightly behind the panels */
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    overflow: hidden;
+}
+
+/* Glowing top edge */
+.glass-panel::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent-color); box-shadow: 0 0 15px var(--accent-color);
+}
+
+/* --- LEFT PANEL: LIBRARY --- */
+.panel-header h2 {
+    margin: 0 0 15px 0; color: var(--accent-color); letter-spacing: 2px; font-weight: 700;
+}
+
+.search-container input {
+    width: 100%; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.4); color: white; font-size: 1.1em; font-family: 'Rajdhani', sans-serif;
+    box-sizing: border-box; transition: all 0.2s;
+}
+.search-container input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
+
+.track-list { 
+    list-style: none; padding: 0; margin-top: 15px; 
+    overflow-y: auto; /* Makes the list scrollable */
+    flex-grow: 1;
+}
+/* Custom Scrollbar for the list */
+.track-list::-webkit-scrollbar { width: 6px; }
+.track-list::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
+
+.track-item { 
+    padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: all 0.2s; 
+    border-left: 2px solid transparent; background: transparent;
+}
+.track-item:hover { background: rgba(255,255,255,0.05); border-left: 2px solid var(--text-muted); }
+.track-item.active { background: rgba(250, 30, 78, 0.1); border-left: 4px solid var(--accent-color); }
+.track-title { font-weight: 700; font-size: 1.1em; letter-spacing: 0.5px;}
+.track-artist { color: var(--text-muted); font-size: 0.9em; margin-top: 4px; font-weight: 500;}
+
+/* --- RIGHT PANEL: PLAYER --- */
+.now-playing-header { display: flex; align-items: center; gap: 15px; }
+#cover-art { 
+    width: 90px; height: 90px; border-radius: 4px; object-fit: cover; 
+    border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+}
+#now-playing-title { text-transform: uppercase; letter-spacing: 1px; font-size: 1.5em;}
+.artist-text { color: var(--accent-color); font-weight: 600; font-size: 1.1em; margin-top: 5px; text-transform: uppercase; }
+
+.controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 20px; }
+.controls button { 
+    background: transparent; color: var(--text-main); border: 2px solid var(--border-color); 
+    width: 50px; height: 50px; border-radius: 4px; font-size: 1.2em; cursor: pointer; transition: 0.2s; 
+}
+.controls button:hover { border-color: var(--accent-color); box-shadow: 0 0 15px var(--accent-glow); color: var(--accent-color); }
+#play-pause-btn { border-color: var(--accent-color); color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
+#play-pause-btn:hover { background: var(--accent-color); color: #fff; }
+
+.slider-container { display: flex; align-items: center; gap: 10px; margin-top: 20px; font-size: 1em; color: var(--text-muted); font-weight: 600;}
+input[type="range"] { flex-grow: 1; cursor: pointer; accent-color: var(--accent-color); }
+.volume-container { justify-content: center; margin-top: 15px; }
+#volume-bar { max-width: 150px; }
+
+/* --- RIGHT PANEL: DASHBOARD --- */
+.dashboard-panel { flex-grow: 1; display: flex; flex-direction: column;}
+.toggle-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.tab-btn { 
+    background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); 
+    padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; font-weight: 600; transition: 0.2s; 
+}
+.tab-btn:hover { border-color: var(--text-main); color: var(--text-main); }
+.tab-btn.active { background: rgba(250, 30, 78, 0.15); color: var(--accent-color); border-color: var(--accent-color); text-shadow: 0 0 8px var(--accent-glow); }
+
+.mood-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; flex-grow: 1;}
+#grid-time { grid-template-columns: repeat(2, 1fr); }
+.mood-btn { 
+    background: rgba(0,0,0,0.3); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); 
+    padding: 12px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 1.1em; font-weight: 600; letter-spacing: 1px;
+}
+.mood-btn:hover { border-color: var(--accent-color); color: var(--text-main); box-shadow: inset 0 0 15px var(--accent-glow); background: rgba(250, 30, 78, 0.05);}
+.time-btn { font-size: 1.3em; }
+
+#vibe-text { text-align: center; color: var(--accent-color); margin-top: 20px; font-weight: 700; font-size: 1.2em; letter-spacing: 1px; text-shadow: 0 0 5px var(--accent-glow);}
+
+/* --- MODAL --- */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+.modal-box { 
+    background: #0f111a; padding: 40px; border-radius: 4px; text-align: center; max-width: 450px; width: 90%; 
+    border: 1px solid var(--accent-color); box-shadow: 0 0 40px var(--accent-glow); 
+}
+.modal-box h2 { margin-top: 0; color: var(--text-main); letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+.modal-box p { color: var(--text-muted); font-size: 1.1em; margin-bottom: 30px; font-weight: 500;}
+.stress-slider-container { margin: 30px 0; width: 100%; }
+.stress-labels { display: flex; justify-content: space-between; font-size: 1.1em; color: var(--accent-color); margin-top: 10px; font-weight: 700;}
+#submit-mood-btn { 
+    width: 100%; border-radius: 4px; padding: 15px; margin-top: 15px; font-weight: 700; font-size: 1.3em; letter-spacing: 2px;
+    background: var(--accent-color); color: white; border: none; cursor: pointer; transition: 0.2s; font-family: 'Rajdhani', sans-serif;
+}
+#submit-mood-btn:hover { background: #fff; color: var(--accent-color); box-shadow: 0 0 20px var(--accent-glow); }
